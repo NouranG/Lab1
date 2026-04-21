@@ -1,71 +1,61 @@
-from Src.data_loader import load_data
-from Src.preprocessing import DataPreprocessor, Pipeline
-from Src.feature_engineering import create_features
-from Src.model import get_model
-from Src.train import train_model
-from Src.predict import predict
-from sklearn.model_selection import train_test_split
 import pandas as pd
-from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 
+from Src.data_loader import load_data
+from Src.model import get_model
+from Src.preprocessing import DataPreprocessor
+from Src.train import train_model
 
-#------------------
-#1. data loading
-#------------------
+# ------------------
+# 1. data loading
+# ------------------
 
-train=load_data('/teamspace/studios/this_studio/Titanic/data/train.csv')
-test=load_data('/teamspace/studios/this_studio/Titanic/data/test.csv')
+train = load_data("/teamspace/studios/this_studio/Titanic/data/train.csv")
+test = load_data("/teamspace/studios/this_studio/Titanic/data/test.csv")
 
 test_ids = test["PassengerId"]
 
 
-#----------------------
-#2. Splitting X and Y
-#----------------------
+# ----------------------
+# 2. Splitting X and Y
+# ----------------------
 
-X=train.drop(['Survived'],axis=1)
-y=train['Survived']
+X = train.drop(["Survived"], axis=1)
+y = train["Survived"]
 
-#--------------------
-#3. preprocessing
-#--------------------
+# --------------------
+# 3. preprocessing
+# --------------------
 
-preprocess=DataPreprocessor()
-X=preprocess.drop_columns(X)
-test=preprocess.drop_columns(test)
+preprocess = DataPreprocessor()
+X = preprocess.drop_columns(X)
+test = preprocess.drop_columns(test)
 
-preprocessor=preprocess.build_pipeline(X)
+preprocessor = preprocess.build_pipeline(X)
 
 # ---------------------------
 # 4. Train/Validation split
 # ---------------------------
 X_train, X_val, y_train, y_val = train_test_split(
-    X, y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
+    X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-#--------------------
-#5. models
-#--------------------
-models={}
+# --------------------
+# 5. models
+# --------------------
+models = {}
 for model_name in ["rf", "lgb"]:
     model = get_model(model_name)
-    model_pipeline=Pipeline(steps=[
-        ('preprocess',preprocessor),
-        ('model',model)
-    
-    ])
+    model_pipeline = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
 
 models[model_name] = model_pipeline
 
 
-
-#---------------------
-#6. Model training
-#---------------------
+# ---------------------
+# 6. Model training
+# ---------------------
 
 results = {}
 best_model_name = None
@@ -96,29 +86,16 @@ print("\nBest Model:", best_model_name)
 best_pipeline = models[best_model_name]
 best_pipeline.fit(X, y)
 
-#---------------------------
-#8.Prediction
-#---------------------------
-test_preds=best_pipeline.predict(test)
+# ---------------------------
+# 8.Prediction
+# ---------------------------
+test_preds = best_pipeline.predict(test)
 
 # ---------------------------
 # 9. Save predictions
 # ---------------------------
-submission = pd.DataFrame({
-    "PassengerId": test_ids,
-    "Survived": test_preds
-})
+submission = pd.DataFrame({"PassengerId": test_ids, "Survived": test_preds})
 
 submission.to_csv("submission.csv", index=False)
 
 print("\nSubmission saved successfully!")
-
-
-
-
-
-
-
-
-
-
