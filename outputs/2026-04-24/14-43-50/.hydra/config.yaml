@@ -1,0 +1,17 @@
+model:
+  _target_: Src.models.get_model
+  name: lgbm
+  n_estimators: 300
+  learning_rate: 0.05
+  random_state: 42
+feature_extractor:
+  _target_: Src.preprocess.DataPreprocessor
+cv:
+  n_splits: 10
+  shuffle: true
+  random_state: 42
+data:
+  train_path: data/train.csv
+  test_path: data/test.csv
+output:
+  submission_path: submission.csv
