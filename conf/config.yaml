@@ -1,0 +1,15 @@
+defaults:
+  - _self_
+  - model: lgb
+  - feature_extractor: basic
+  - cv: default
+
+data:
+  train_path: ${hydra:runtime.cwd}/data/train.csv
+  test_path: ${hydra:runtime.cwd}/data/test.csv
+
+cv:
+  n_splits: 5
+
+output:
+  submission_path: submission.csv

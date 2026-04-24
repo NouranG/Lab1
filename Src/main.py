@@ -8,94 +8,104 @@ from Src.model import get_model
 from Src.preprocessing import DataPreprocessor
 from Src.train import train_model
 
+import hydra
+from omegaconf import DictConfig
+from hydra.utils import instantiate
+
 # ------------------
 # 1. data loading
 # ------------------
 
-train = load_data("/teamspace/studios/this_studio/Titanic/data/train.csv")
-test = load_data("/teamspace/studios/this_studio/Titanic/data/test.csv")
+@hydra.main(config_path="../conf", config_name="config", version_base=None)
+def main(cfg: DictConfig):
 
-test_ids = test["PassengerId"]
+    train = load_data(cfg.data.train_path)
+    test = load_data(cfg.data.test_path)
 
-
-# ----------------------
-# 2. Splitting X and Y
-# ----------------------
-
-X = train.drop(["Survived"], axis=1)
-y = train["Survived"]
-
-# --------------------
-# 3. preprocessing
-# --------------------
-
-preprocess = DataPreprocessor()
-X = preprocess.drop_columns(X)
-test = preprocess.drop_columns(test)
-
-preprocessor = preprocess.build_pipeline(X)
-
-# ---------------------------
-# 4. Train/Validation split
-# ---------------------------
-X_train, X_val, y_train, y_val = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-# --------------------
-# 5. models
-# --------------------
-models = {}
-for model_name in ["rf", "lgb"]:
-    model = get_model(model_name)
-    model_pipeline = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
-
-models[model_name] = model_pipeline
+    test_ids = test["PassengerId"]
 
 
-# ---------------------
-# 6. Model training
-# ---------------------
+    # ----------------------
+    # 2. Splitting X and Y
+    # ----------------------
 
-results = {}
-best_model_name = None
-best_score = 0
+    X = train.drop(["Survived"], axis=1)
+    y = train["Survived"]
 
-for name, pipeline in models.items():
+    # --------------------
+    # 3. preprocessing
+    # --------------------
 
-    print(f"\n========== Training {name} ==========")
+    preprocess = instantiate(cfg.feature_extractor)
+    X = preprocess.drop_columns(X)
+    test = preprocess.drop_columns(test)
 
-    trained_model, oof_preds = train_model(X, y, pipeline, n_splits=5)
+    preprocessor = preprocess.build_pipeline(X)
 
-    score = roc_auc_score(y, oof_preds)
+    # ---------------------------
+    # 4. Train/Validation split
+    # ---------------------------
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-    results[name] = score
+    # --------------------
+    # 5. models
+    # --------------------
+    models = {}
+    for model_name in ["rf", "lgb"]:
+        model = get_model(model_name)
+        model_pipeline = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
 
-    print(f"{name} Final AUC: {score:.4f}")
-
-    if score > best_score:
-        best_score = score
-        best_model_name = name
+    models[model_name] = model_pipeline
 
 
-print("\nBest Model:", best_model_name)
+    # ---------------------
+    # 6. Model training
+    # ---------------------
 
-# ---------------------------
-# 7. Retrain best model on full data
-# ---------------------------
-best_pipeline = models[best_model_name]
-best_pipeline.fit(X, y)
+    results = {}
+    best_model_name = None
+    best_score = 0
 
-# ---------------------------
-# 8.Prediction
-# ---------------------------
-test_preds = best_pipeline.predict(test)
+    for name, pipeline in models.items():
 
-# ---------------------------
-# 9. Save predictions
-# ---------------------------
-submission = pd.DataFrame({"PassengerId": test_ids, "Survived": test_preds})
+        print(f"\n========== Training {name} ==========")
 
-submission.to_csv("submission.csv", index=False)
+        trained_model, oof_preds = train_model(X, y, pipeline, n_splits=cfg.cv.n_splits)
 
-print("\nSubmission saved successfully!")
+        score = roc_auc_score(y, oof_preds)
+
+        results[name] = score
+
+        print(f"{name} Final AUC: {score:.4f}")
+
+        if score > best_score:
+            best_score = score
+            best_model_name = name
+
+
+    print("\nBest Model:", best_model_name)
+
+    # ---------------------------
+    # 7. Retrain best model on full data
+    # ---------------------------
+    best_pipeline = models[best_model_name]
+    best_pipeline.fit(X, y)
+
+    # ---------------------------
+    # 8.Prediction
+    # ---------------------------
+    test_preds = best_pipeline.predict(test)
+
+    # ---------------------------
+    # 9. Save predictions
+    # ---------------------------
+    submission = pd.DataFrame({"PassengerId": test_ids, "Survived": test_preds})
+
+    submission.to_csv("submission.csv", index=False)
+
+    print("\nSubmission saved successfully!")
+
+if __name__ == "__main__":
+    main()

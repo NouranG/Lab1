@@ -1,0 +1,17 @@
+data:
+  train_path: ${hydra:runtime.cwd}/data/train.csv
+  test_path: ${hydra:runtime.cwd}/data/test.csv
+cv:
+  n_splits: 10
+  shuffle: true
+  random_state: 42
+output:
+  submission_path: submission.csv
+model:
+  _target_: Src.models.get_model
+  name: lgbm
+  n_estimators: 300
+  learning_rate: 0.05
+  random_state: 42
+feature_extractor:
+  _target_: Src.preprocessing.DataPreprocessor
