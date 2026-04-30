@@ -1,0 +1,6 @@
+[core]
+    remote = localremote
+['remote "localremote"']
+    url = /teamspace/studios/this_studio/dvc_store
+['remote "origin"']
+    url = s3://dvc
