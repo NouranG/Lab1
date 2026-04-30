@@ -1,0 +1,7 @@
+[core]
+    remote = localremote
+['remote "localremote"']
+    url = /teamspace/studios/this_studio/dcv_store
+['remote "origin"']
+    url = s3://dvc
+    endpointurl = https://dagshub.com/api/v1/repo-buckets/s3/nouranlahzy38

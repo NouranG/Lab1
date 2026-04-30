@@ -1,0 +1,7 @@
+stages:
+  train:
+    cmd: python main.py
+    deps:
+    - data/
+    outs:
+    - models/model.pkl
