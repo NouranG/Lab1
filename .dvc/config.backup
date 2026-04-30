@@ -2,3 +2,5 @@
     remote = localremote
 ['remote "localremote"']
     url = /teamspace/studios/this_studio/dcv_store
+['remote "origin"']
+    url = https://dagshub.com/nouranlahzy38/MLOps_labs.dvc
