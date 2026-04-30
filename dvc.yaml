@@ -1,7 +1,8 @@
 stages:
   train:
-    cmd: python main.py
+    cmd: python -m Src.main
     deps:
-    - data/
+      - data/
+      - Src/
     outs:
-    - models/model.pkl
+      - models/model.pkl
