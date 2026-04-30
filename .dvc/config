@@ -1,7 +1,7 @@
 [core]
-    remote = localremote
+    remote = origin
 ['remote "localremote"']
     url = /teamspace/studios/this_studio/dcv_store
 ['remote "origin"']
-    url = s3://dvc
-    endpointurl = https://dagshub.com/api/v1/repo-buckets/s3/nouranlahzy38
+    url = s3://mlops_labs
+    endpointurl = https://dagshub.com/nouranlahzy38/MLOps_labs.s3

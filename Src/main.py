@@ -57,7 +57,7 @@ def main(cfg: DictConfig):
         model = get_model(model_name)
         model_pipeline = Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
 
-    models[model_name] = model_pipeline
+        models[model_name] = model_pipeline
 
 
     # ---------------------
