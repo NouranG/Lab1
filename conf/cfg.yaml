@@ -1,0 +1,4 @@
+model:
+  tracking_uri: "https://dagshub.com/nouranlahzy38/MLOps_labs.mlflow"
+  repo_name: "MLOps_labs"
+  use_mlflow: true
