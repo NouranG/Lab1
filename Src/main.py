@@ -17,10 +17,10 @@ from hydra.utils import instantiate
 # ------------------
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
-def main(cfg: DictConfig):
+def main(confg: DictConfig):
 
-    train = load_data(cfg.data.train_path)
-    test = load_data(cfg.data.test_path)
+    train = load_data(confg.data.train_path)
+    test = load_data(confg.data.test_path)
 
     test_ids = test["PassengerId"]
 
@@ -36,7 +36,7 @@ def main(cfg: DictConfig):
     # 3. preprocessing
     # --------------------
 
-    preprocess = instantiate(cfg.feature_extractor)
+    preprocess = instantiate(confg.feature_extractor)
     X = preprocess.drop_columns(X)
     test = preprocess.drop_columns(test)
 
@@ -72,7 +72,7 @@ def main(cfg: DictConfig):
 
         print(f"\n========== Training {name} ==========")
 
-        trained_model, oof_preds = train_model(X, y, pipeline, n_splits=cfg.cv.n_splits)
+        trained_model, oof_preds = train_model(X, y, pipeline, n_splits=confg.cv.n_splits)
 
         score = roc_auc_score(y, oof_preds)
 

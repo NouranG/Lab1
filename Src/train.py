@@ -3,17 +3,21 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 import pickle
 import os
-import dagshub
 import mlflow
 from mlflow.tracking import MlflowClient
 import mlflow.sklearn
+from mlflow.exceptions import MlflowException
 from dotenv import load_dotenv
 import yaml
 
 load_dotenv()
 
 #loading cfg file:
-with open("config.yaml") as f:
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+cfg_path = os.path.join(BASE_DIR, "..", "conf", "cfg.yaml")
+
+with open(cfg_path) as f:
     cfg = yaml.safe_load(f)
 
 #setting tracking uri
@@ -22,15 +26,18 @@ mlflow.set_tracking_uri(tracking_uri)
 
 
 #instantiating mlflow client
-client=mlflow.MlflowClient(tracking_uri=tracking_uri)
+client=MlflowClient(tracking_uri=tracking_uri)
+
+  # already exists
 
 #logging models:
 
 
+mlflow.set_experiment("titanic")
 
-def train_model(X, y, model,n_splits=5):
 
-    mlflow.set_experiment("model")
+
+def train_model(X, y, model, n_splits=5):
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
@@ -40,6 +47,12 @@ def train_model(X, y, model,n_splits=5):
     best_model = None
 
     with mlflow.start_run():
+        try:
+            client.create_registered_model("credit_model")
+        except Exception as e:
+            if "RESOURCE_ALREADY_EXISTS" not in str(e) and "already exists" not in str(e):
+                raise
+   
 
         for fold, (train_idx, val_idx) in enumerate(skf.split(X, y)):
 
@@ -56,27 +69,20 @@ def train_model(X, y, model,n_splits=5):
 
             if fold_auc > best_auc:
                 best_auc = fold_auc
-                best_model = pickle.dumps(model)
-        overall_auc = roc_auc_score(y, oof_preds)
+                best_model = model  
 
+        overall_auc = roc_auc_score(y, oof_preds)
 
         print("Overall AUC:", overall_auc)
 
-        if best_model is not None:
-            os.makedirs("models", exist_ok=True)
-            with open("models/model.pkl", "wb") as f:
-                f.write(best_model)
-            print("Best model saved to models/model.pkl")
+        mlflow.log_metric("overall_auc", float(overall_auc))
+        mlflow.log_param("model_type", type(model).__name__)
 
-        
-        mlflow.log_metric("overall_auc", overall_auc)
-        mlflow.log_param("model_type", model)
+        #  log + register  model
+        mlflow.sklearn.log_model(
+            best_model,
+            "model",
+            registered_model_name="credit_model"
+        ) # type: ignore[attr-defined]
 
-        mlflow.sklearn.log_model(best_model, "model",
-        registered_model_name="prod_model")
-
-        return model, oof_preds
-
-
-
-
+    return model, oof_preds
